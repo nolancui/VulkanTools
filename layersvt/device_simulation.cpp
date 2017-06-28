@@ -62,7 +62,21 @@
 
 namespace {
 
-const uint32_t kVersionDevsimImplementation = VK_MAKE_VERSION(0, 1, 0);
+const uint32_t kVersionDevsimMajor = 0;
+const uint32_t kVersionDevsimMinor = 2;
+const uint32_t kVersionDevsimPatch = 0;
+const uint32_t kVersionDevsimImplementation = VK_MAKE_VERSION(kVersionDevsimMajor, kVersionDevsimMinor, kVersionDevsimPatch);
+
+const VkLayerProperties kLayerProperties[] = {{
+    "VK_LAYER_LUNARG_device_simulation",       // layerName
+    VK_MAKE_VERSION(1, 0, VK_HEADER_VERSION),  // specVersion
+    kVersionDevsimImplementation,              // implementationVersion
+    "LunarG device simulation layer"           // description
+}};
+const uint32_t kLayerPropertiesCount = (sizeof(kLayerProperties) / sizeof(kLayerProperties[0]));
+
+const VkExtensionProperties *kExtensionProperties = nullptr;
+const uint32_t kExtensionPropertiesCount = 0;
 
 // Global variables //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -273,7 +287,7 @@ bool VkjsonLoader::LoadFile(const char *filename) {
         return false;
     }
 
-    DebugPrintf("JsonCpp %s\n", JSONCPP_VERSION_STRING);
+    DebugPrintf("JsonCpp version %s\n", JSONCPP_VERSION_STRING);
     Json::Reader reader;
     Json::Value root = Json::nullValue;
     bool success = reader.parse(json_file, root, false);
@@ -548,7 +562,10 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateInstance(const VkInstanceCreateInfo *pCreat
         return result;
     }
 
-    // Our layer-specific initialization.
+    // Our layer-specific initialization...
+
+    DebugPrintf("%s version %d.%d.%d\n", kLayerProperties[0].layerName, kVersionDevsimMajor, kVersionDevsimMinor, kVersionDevsimPatch);
+
     std::string filename = GetEnvarValue(kEnvarDevsimFilename);
     DebugPrintf("\t\tenvar %s = \"%s\"\n", kEnvarDevsimFilename, filename.c_str());
     if (filename.empty()) {
@@ -640,23 +657,12 @@ VkResult EnumerateProperties(uint32_t src_count, const T *src_props, uint32_t *d
     return (copy_count == src_count) ? VK_SUCCESS : VK_INCOMPLETE;
 }
 
-const VkLayerProperties kLayerProperties[] = {{
-    "VK_LAYER_LUNARG_device_simulation",       // layerName
-    VK_MAKE_VERSION(1, 0, VK_HEADER_VERSION),  // specVersion
-    kVersionDevsimImplementation,              // implementationVersion
-    "LunarG device simulation layer"           // description
-}};
-const uint32_t kLayerPropertiesCount = (sizeof(kLayerProperties) / sizeof(kLayerProperties[0]));
-
 VKAPI_ATTR VkResult VKAPI_CALL EnumerateInstanceLayerProperties(uint32_t *pCount, VkLayerProperties *pProperties) {
     DebugPrintf("EnumerateInstanceLayerProperties\n");
     return EnumerateProperties(kLayerPropertiesCount, kLayerProperties, pCount, pProperties);
 }
 
 // Per [LALI], EnumerateDeviceLayerProperties() is deprecated and may be omitted.
-
-const VkExtensionProperties *kExtensionProperties = nullptr;
-const uint32_t kExtensionPropertiesCount = 0;
 
 VKAPI_ATTR VkResult VKAPI_CALL EnumerateInstanceExtensionProperties(const char *pLayerName, uint32_t *pCount,
                                                                     VkExtensionProperties *pProperties) {
